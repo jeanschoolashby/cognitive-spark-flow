@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Brain, Settings, X, Zap, Target, Clock, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,48 +45,8 @@ export const MindguardWidget = () => {
     }
   }, [isActive, currentMode]);
 
-  // Simulate challenge interrupts
-  useEffect(() => {
-    if (isActive && currentMode !== "off") {
-      const intervalTime = (11 - frequency[0]) * 1000; // Convert frequency to ms
-      const timer = setInterval(() => {
-        setShowChallenge(true);
-      }, intervalTime);
-      return () => clearInterval(timer);
-    }
-  }, [isActive, currentMode, frequency]);
-
-  // Simulate AI query interception
-  useEffect(() => {
-    if (isActive && currentMode !== "off") {
-      const interceptTimer = setInterval(() => {
-        // Simulate intercepting an AI query
-        const sampleQueries = [
-          "How do I implement authentication in React?",
-          "What's the best way to optimize database queries?",
-          "Explain machine learning algorithms",
-          "How to deploy a Node.js application?",
-          "What are design patterns in software engineering?"
-        ];
-        
-        const sampleResponses = [
-          "To implement authentication in React, you typically use libraries like Auth0, Firebase Auth, or implement JWT-based authentication...",
-          "Database query optimization involves several strategies including indexing, query analysis, normalization...",
-          "Machine learning algorithms can be categorized into supervised, unsupervised, and reinforcement learning...",
-          "Deploying Node.js applications can be done through various platforms like Heroku, AWS, Docker containers...",
-          "Design patterns are reusable solutions to commonly occurring problems in software design..."
-        ];
-        
-        const randomIndex = Math.floor(Math.random() * sampleQueries.length);
-        setInterceptedQuery(sampleQueries[randomIndex]);
-        setInterceptedResponse(sampleResponses[randomIndex]);
-        setShowInterceptor(true);
-        setInterceptsTriggered(prev => prev + 1);
-      }, (11 - frequency[0]) * 2000); // Less frequent than challenges
-      
-      return () => clearInterval(interceptTimer);
-    }
-  }, [isActive, currentMode, frequency]);
+  // REMOVED: Automatic challenge interrupts - these were too annoying
+  // REMOVED: Automatic AI query interception - these were interrupting workflow
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -124,6 +85,11 @@ export const MindguardWidget = () => {
     setShowChallenge(true);
   };
 
+  // Manual challenge trigger
+  const handleManualChallenge = () => {
+    setShowChallenge(true);
+  };
+
   if (!isExpanded) {
     return (
       <>
@@ -144,16 +110,7 @@ export const MindguardWidget = () => {
           )}
         </div>
 
-        {/* Modals */}
-        <ResponseInterceptor
-          isOpen={showInterceptor}
-          onClose={() => setShowInterceptor(false)}
-          onStartThinkBreak={handleStartThinkBreak}
-          onContinueWithMindguard={handleContinueWithMindguard}
-          interceptedQuery={interceptedQuery}
-          interceptedResponse={interceptedResponse}
-        />
-
+        {/* Modals - now only manually triggered */}
         <ChatInterface
           isOpen={showChatInterface}
           onClose={() => setShowChatInterface(false)}
@@ -211,7 +168,7 @@ export const MindguardWidget = () => {
                   onCheckedChange={setIsActive}
                 />
                 <span className="text-sm text-gray-500">
-                  {isActive ? 'Filtering' : 'Inactive'}
+                  {isActive ? 'Active' : 'Inactive'}
                 </span>
               </div>
             </div>
@@ -258,37 +215,26 @@ export const MindguardWidget = () => {
               </div>
             </div>
 
-            {/* Settings */}
+            {/* Manual Controls */}
             {currentMode !== 'off' && (
-              <>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Difficulty: {difficulty[0]}/5
-                  </label>
-                  <Slider
-                    value={difficulty}
-                    onValueChange={setDifficulty}
-                    max={5}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Frequency: {frequency[0]}/10
-                  </label>
-                  <Slider
-                    value={frequency}
-                    onValueChange={setFrequency}
-                    max={10}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-              </>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowChatInterface(true)}
+                  className="flex-1"
+                >
+                  Open Chat
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handleManualChallenge}
+                  className="flex-1"
+                >
+                  Take Challenge
+                </Button>
+              </div>
             )}
 
             {/* Stats */}
@@ -296,38 +242,19 @@ export const MindguardWidget = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">Intercepts: {interceptsTriggered}</span>
+                  <span className="text-sm">Challenges: {challengesCompleted}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">Time: {formatTime(sessionTime)}</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Challenges: {challengesCompleted}</span>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setShowChatInterface(true)}
-                >
-                  Open Chat
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Modals */}
-      <ResponseInterceptor
-        isOpen={showInterceptor}
-        onClose={() => setShowInterceptor(false)}
-        onStartThinkBreak={handleStartThinkBreak}
-        onContinueWithMindguard={handleContinueWithMindguard}
-        interceptedQuery={interceptedQuery}
-        interceptedResponse={interceptedResponse}
-      />
-
+      {/* Modals - now only manually triggered */}
       <ChatInterface
         isOpen={showChatInterface}
         onClose={() => setShowChatInterface(false)}
