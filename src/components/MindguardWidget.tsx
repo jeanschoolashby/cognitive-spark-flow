@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Brain, Settings, X, Zap, Target, Clock, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { ChallengeModal } from "./ChallengeModal";
 import { ChatInterface } from "./ChatInterface";
 import { ResponseInterceptor } from "./ResponseInterceptor";
+import { AIDetectionBanner } from "./AIDetectionBanner";
+import { useAIDetection } from "@/hooks/useAIDetection";
 
 type AssistMode = "enhance" | "protect" | "focus" | "off";
 type DirectnessLevel = 1 | 2 | 3 | 4 | 5;
@@ -35,6 +36,20 @@ export const MindguardWidget = () => {
   const [sessionTime, setSessionTime] = useState(0);
   const [interceptsTriggered, setInterceptsTriggered] = useState(0);
 
+  // AI Detection
+  const { isAIChatDetected, detectedPlatform } = useAIDetection();
+  const [showAIBanner, setShowAIBanner] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Show banner when AI chat is detected and conditions are met
+  useEffect(() => {
+    if (isAIChatDetected && isActive && currentMode !== "off" && !bannerDismissed && !isExpanded) {
+      setShowAIBanner(true);
+    } else {
+      setShowAIBanner(false);
+    }
+  }, [isAIChatDetected, isActive, currentMode, bannerDismissed, isExpanded]);
+
   // Simulate session timer
   useEffect(() => {
     if (isActive && currentMode !== "off") {
@@ -44,9 +59,6 @@ export const MindguardWidget = () => {
       return () => clearInterval(timer);
     }
   }, [isActive, currentMode]);
-
-  // REMOVED: Automatic challenge interrupts - these were too annoying
-  // REMOVED: Automatic AI query interception - these were interrupting workflow
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -90,9 +102,28 @@ export const MindguardWidget = () => {
     setShowChallenge(true);
   };
 
+  // AI Detection handlers
+  const handleOpenMindguardFromBanner = () => {
+    setShowAIBanner(false);
+    setShowChatInterface(true);
+  };
+
+  const handleDismissBanner = () => {
+    setBannerDismissed(true);
+    setShowAIBanner(false);
+  };
+
   if (!isExpanded) {
     return (
       <>
+        {/* AI Detection Banner */}
+        {showAIBanner && (
+          <AIDetectionBanner
+            onOpenMindguardChat={handleOpenMindguardFromBanner}
+            onDismiss={handleDismissBanner}
+          />
+        )}
+
         <div className="fixed bottom-6 right-6 z-50">
           <Button
             onClick={() => setIsExpanded(true)}
@@ -106,6 +137,14 @@ export const MindguardWidget = () => {
               className="absolute -top-2 -left-2 bg-white text-xs shadow-md"
             >
               {interceptsTriggered}
+            </Badge>
+          )}
+          {isAIChatDetected && isActive && currentMode !== "off" && (
+            <Badge 
+              variant="secondary" 
+              className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs shadow-md"
+            >
+              AI
             </Badge>
           )}
         </div>
@@ -135,6 +174,14 @@ export const MindguardWidget = () => {
 
   return (
     <>
+      {/* AI Detection Banner */}
+      {showAIBanner && (
+        <AIDetectionBanner
+          onOpenMindguardChat={handleOpenMindguardFromBanner}
+          onDismiss={handleDismissBanner}
+        />
+      )}
+
       <div className="fixed bottom-6 right-6 z-50">
         <Card className="w-80 shadow-xl border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader className="pb-3">
@@ -145,7 +192,14 @@ export const MindguardWidget = () => {
                 </div>
                 <div>
                   <CardTitle className="text-lg">Mindguard</CardTitle>
-                  <p className="text-sm text-gray-500">AI Response Filter</p>
+                  <p className="text-sm text-gray-500">
+                    AI Response Filter
+                    {isAIChatDetected && (
+                      <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
+                        {detectedPlatform}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
               <Button
@@ -249,6 +303,11 @@ export const MindguardWidget = () => {
                   <span className="text-sm">Time: {formatTime(sessionTime)}</span>
                 </div>
               </div>
+              {isAIChatDetected && (
+                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                  🤖 AI chat detected - Mindguard ready to enhance responses
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
